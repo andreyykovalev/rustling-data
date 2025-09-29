@@ -6,3 +6,4 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0"
 thiserror = "1.0"
+async-trait = "0.1.89"
