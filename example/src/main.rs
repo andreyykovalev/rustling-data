@@ -1,9 +1,7 @@
 use std::fmt;
 // example/src/main.rs
-use rustling_api::HelloWorld;
 use rustling_api::Repository;
 use anyhow;
-use rustling_derive::HelloWorld;
 use rustling_derive::Repository;
 
 #[derive(Debug)]
@@ -12,7 +10,7 @@ struct User {
     username: String,
 }
 
-#[derive(Debug, HelloWorld, Repository)]
+#[derive(Debug, Repository)]
 #[entity(User)]
 #[id(i32)]
 struct UserRepository;
@@ -36,8 +34,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //
     // Ok(())
     // <UserRepository as rustling_api::HelloWorld>::hello();
-    UserRepository::hello();
     let repo = UserRepository;
-    repo.find_all()?;
+    // let users = <UserRepository as Repository<User, i32>>::find_all(&repo)?;
+    repo.find_all();
+
+    let repo = UserRepository;
+    let users = repo.find_all().await?;
+    println!("Fetched {} users", users.len());
     Ok(())
 }

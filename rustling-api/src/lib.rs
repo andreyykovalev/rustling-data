@@ -1,7 +1,8 @@
 use anyhow::Error;
 
+#[async_trait::async_trait]
 pub trait Repository<T, ID> {
-    fn find_all(&self) -> Result<Vec<T>, Error>;
+    async fn find_all(&self) -> Result<Vec<T>, anyhow::Error>;
 }
 
 pub trait HelloWorld {

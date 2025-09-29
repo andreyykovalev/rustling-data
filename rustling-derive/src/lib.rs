@@ -40,20 +40,15 @@ fn impl_repository(syntax_tree: &syn::DeriveInput) -> TokenStream {
     let (entity, id) = get_entity_and_id(syntax_tree);
 
     let gene = quote! {
+        #[async_trait::async_trait]
         impl Repository<#entity, #id> for #name {
-            // fn hello() {
-            //     // ::rustling_core::SqlRepository::hello();
-            //     eprintln!("Entity: {}", entity);
-            //     eprintln!("Id: {}", id);
-            //     eprintln!("Name: {}", name);
-            // }
+            async fn find_all(&self) -> Result<Vec<#entity>, anyhow::Error> {
+                // Instantiate SqlRepository
+                let sql_repo = ::rustling_core::SqlRepository {};
 
-            fn find_all(&self) -> Result<Vec<#entity>, anyhow::Error> {
-                print!("Entity: {}", stringify!(#entity));
-                print!(" -> ID Type:     {}", stringify!(#id));
-                print!("Name: {}", #name);
-                print!("Fetching all {}", stringify!(#entity));
-                Ok(Vec::new())
+                // Call the async method
+                let result: Vec<#entity> = sql_repo.find_all().await?;
+                Ok(result)
             }
         }
     };
