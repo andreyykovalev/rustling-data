@@ -1,11 +1,27 @@
+use std::fmt;
 // example/src/main.rs
 use rustling_api::HelloWorld;
+use rustling_api::Repository;
 use anyhow;
 use rustling_derive::HelloWorld;
-use rustling_core;
+use rustling_derive::Repository;
 
-#[derive(HelloWorld)]
+#[derive(Debug)]
+struct User {
+    id: i32,
+    username: String,
+}
+
+#[derive(Debug, HelloWorld, Repository)]
+#[entity(User)]
+#[id(i32)]
 struct UserRepository;
+
+impl fmt::Display for UserRepository {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "UserRepository")
+    }
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -21,5 +37,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Ok(())
     // <UserRepository as rustling_api::HelloWorld>::hello();
     UserRepository::hello();
+    let repo = UserRepository;
+    repo.find_all()?;
     Ok(())
 }
