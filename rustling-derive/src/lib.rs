@@ -1,9 +1,7 @@
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
-use rustling_core;
 use quote::quote;
-
 
 #[proc_macro_derive(HelloWorld)]
 pub fn hello_world_derive(input: TokenStream) -> TokenStream {
@@ -18,7 +16,7 @@ pub fn hello_world_derive(input: TokenStream) -> TokenStream {
 pub fn repository_derive(input: TokenStream) -> TokenStream {
     let syntax_tree = syn::parse(input).unwrap();
 
-    impl_repository(&syntax_tree)
+    implement_repository_trait(&syntax_tree)
 }
 
 fn impl_hello_world(syntax_tree: &syn::DeriveInput) -> TokenStream {
@@ -34,7 +32,7 @@ fn impl_hello_world(syntax_tree: &syn::DeriveInput) -> TokenStream {
     gene.into()
 }
 
-fn impl_repository(syntax_tree: &syn::DeriveInput) -> TokenStream {
+fn implement_repository_trait(syntax_tree: &syn::DeriveInput) -> TokenStream {
     let name = &syntax_tree.ident; // Name of the struct
 
     let (entity, id, table_name) = get_entity_and_id(syntax_tree);
@@ -53,12 +51,18 @@ fn impl_repository(syntax_tree: &syn::DeriveInput) -> TokenStream {
     gene.into()
 }
 
-fn get_entity_and_id(ast: &syn::DeriveInput) -> (proc_macro2::TokenStream, proc_macro2::TokenStream, String) {
-    let entity_attr = ast.attrs.iter()
+fn get_entity_and_id(
+    ast: &syn::DeriveInput,
+) -> (proc_macro2::TokenStream, proc_macro2::TokenStream, String) {
+    let entity_attr = ast
+        .attrs
+        .iter()
         .find(|attr| attr.path().is_ident("entity"))
         .expect("Missing #[entity(Type)]");
 
-    let id_attr = ast.attrs.iter()
+    let id_attr = ast
+        .attrs
+        .iter()
         .find(|attr| attr.path().is_ident("id"))
         .expect("Missing #[id(Type)]");
 

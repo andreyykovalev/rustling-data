@@ -1,7 +1,3 @@
-// rustling-core/src/lib.rs
-use sqlx::{FromRow, Pool, Postgres, query_as};
-use std::marker::PhantomData;
-
 pub struct SqlRepository {
     pool: sqlx::PgPool,
 }
@@ -20,6 +16,6 @@ impl SqlRepository {
     }
 
     pub fn hello() {
-        println!("Hello, Wcscsorld!");
+        println!("Hello, World!");
     }
 }

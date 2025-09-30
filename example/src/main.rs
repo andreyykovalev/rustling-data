@@ -1,5 +1,3 @@
-use std::fmt;
-// example/src/main.rs
 use anyhow;
 use rustling_api::Repository;
 use rustling_derive::Repository;
@@ -32,13 +30,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .connect("postgres://rustling:secretpassword@localhost:5432/rustlingdb")
         .await?;
 
-    //
-    // let repo = SqlRepository::<User>::new(&pool, "users");
-    // let users = repo.find_all().await?; // <-- make find_all async
-    // println!("Found users: {:?}", users);
-    //
-    // Ok(())
-    // <UserRepository as rustling_api::HelloWorld>::hello();
     let repo = UserRepository::new(pool.clone());
     // let users = <UserRepository as Repository<User, i32>>::find_all(&repo)?;
     let users = repo.find_all().await?;
