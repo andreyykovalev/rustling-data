@@ -37,17 +37,15 @@ fn impl_hello_world(syntax_tree: &syn::DeriveInput) -> TokenStream {
 fn impl_repository(syntax_tree: &syn::DeriveInput) -> TokenStream {
     let name = &syntax_tree.ident; // Name of the struct
 
-    let (entity, id) = get_entity_and_id(syntax_tree);
+    let (entity, id, table_name) = get_entity_and_id(syntax_tree);
 
     let gene = quote! {
+
         #[async_trait::async_trait]
         impl Repository<#entity, #id> for #name {
             async fn find_all(&self) -> Result<Vec<#entity>, anyhow::Error> {
-                // Instantiate SqlRepository
-                let sql_repo = ::rustling_core::SqlRepository {};
-
-                // Call the async method
-                let result: Vec<#entity> = sql_repo.find_all().await?;
+                let sql_repo = ::rustling_core::SqlRepository::new(self.pool.clone());
+                let result = sql_repo.find_all::<#entity>(#table_name).await?;
                 Ok(result)
             }
         }
@@ -55,7 +53,7 @@ fn impl_repository(syntax_tree: &syn::DeriveInput) -> TokenStream {
     gene.into()
 }
 
-fn get_entity_and_id(ast: &syn::DeriveInput) -> (proc_macro2::TokenStream, proc_macro2::TokenStream) {
+fn get_entity_and_id(ast: &syn::DeriveInput) -> (proc_macro2::TokenStream, proc_macro2::TokenStream, String) {
     let entity_attr = ast.attrs.iter()
         .find(|attr| attr.path().is_ident("entity"))
         .expect("Missing #[entity(Type)]");
@@ -67,5 +65,23 @@ fn get_entity_and_id(ast: &syn::DeriveInput) -> (proc_macro2::TokenStream, proc_
     let entity: syn::Type = entity_attr.parse_args().unwrap();
     let id: syn::Type = id_attr.parse_args().unwrap();
 
-    (quote! { #entity }, quote! { #id })
+    let table_attr = ast.attrs.iter().find(|attr| attr.path().is_ident("table"));
+
+    let table_name = if let Some(attr) = table_attr {
+        // If #[table("my_table")] exists → use it
+        attr.parse_args::<syn::LitStr>()
+            .expect("Expected string literal in #[table]")
+            .value()
+    } else {
+        // Otherwise derive from entity type
+        let ident = match entity {
+            syn::Type::Path(ref p) if p.qself.is_none() => {
+                p.path.segments.last().unwrap().ident.to_string()
+            }
+            _ => panic!("Unsupported entity type"),
+        };
+        ident.to_lowercase() + "s"
+    };
+
+    (quote! { #entity }, quote! { #id }, table_name)
 }
