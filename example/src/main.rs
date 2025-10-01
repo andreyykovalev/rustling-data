@@ -1,5 +1,5 @@
 use anyhow;
-use rustling_api::Repository;
+use rustling_data::api::Repository;
 use rustling_derive::Repository;
 use sqlx::FromRow;
 use sqlx::postgres::PgPoolOptions;

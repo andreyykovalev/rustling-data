@@ -1,3 +1,5 @@
+pub mod api;
+
 pub struct SqlRepository {
     pool: sqlx::PgPool,
 }
