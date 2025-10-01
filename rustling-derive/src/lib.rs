@@ -42,7 +42,7 @@ fn implement_repository_trait(syntax_tree: &syn::DeriveInput) -> TokenStream {
         #[async_trait::async_trait]
         impl Repository<#entity, #id> for #name {
             async fn find_all(&self) -> Result<Vec<#entity>, anyhow::Error> {
-                let sql_repo = ::rustling_data::SqlRepository::new(self.pool.clone());
+                let sql_repo = ::rustling_data::PostgresDriver::new(self.pool.clone());
                 let result = sql_repo.find_all::<#entity>(#table_name).await?;
                 Ok(result)
             }
