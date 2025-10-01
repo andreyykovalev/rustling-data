@@ -1,8 +1,10 @@
 use anyhow;
+use mongodb::bson::oid::ObjectId;
 use rustling_data::api::Repository;
-use rustling_derive::Repository;
+use rustling_derive::{MongoRepository, Repository};
 use sqlx::FromRow;
 use sqlx::postgres::PgPoolOptions;
+use serde::{Serialize, Deserialize};
 
 #[derive(Debug, FromRow)]
 struct User {
@@ -10,11 +12,31 @@ struct User {
     username: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Test {
+    #[serde(rename = "_id")]
+    pub id: ObjectId,
+    pub name: String,
+    pub email: String,
+}
+
 #[derive(Repository)]
 #[entity(User)]
 #[id(i32)]
 pub struct UserRepository {
     pool: sqlx::PgPool,
+}
+
+use mongodb::Client;
+use mongodb::options::ClientOptions;
+
+#[derive(MongoRepository)]
+#[entity(Test)]
+#[id(bson::oid::ObjectId)]
+#[collection("tests")]
+pub struct TestRepository {
+    client: mongodb::Client,
+    db_name: String,
 }
 
 impl UserRepository {
@@ -34,5 +56,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // let users = <UserRepository as Repository<User, i32>>::find_all(&repo)?;
     let users = repo.find_all().await?;
     println!("Fetched {:?} users", users);
+
+
+    let client_options = ClientOptions::parse("mongodb://admin:secret@localhost:27017").await?;
+    let client = Client::with_options(client_options)?;
+
+    // Initialize repository
+    let test_repo = TestRepository {
+        client: client.clone(),
+        db_name: "my_database".to_string(),
+    };
+
+    let existing = test_repo.find_all().await?;
+    if existing.is_empty() {
+        let new_test = Test {
+            id: ObjectId::new(),
+            name: "Alice".to_string(),
+            email: "alice@example.com".to_string(),
+        };
+        test_repo.client
+            .database(&test_repo.db_name)
+            .collection::<Test>("tests")
+            .insert_one(new_test, None)
+            .await?;
+    }
+
+    let tests = test_repo.find_all().await?;
+    println!("All Test documents from MongoDB: {:?}", tests);
     Ok(())
+
 }
