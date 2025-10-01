@@ -3,33 +3,11 @@ extern crate proc_macro;
 use proc_macro::TokenStream;
 use quote::quote;
 
-#[proc_macro_derive(HelloWorld)]
-pub fn hello_world_derive(input: TokenStream) -> TokenStream {
-    // Parse the input tokens into a syntax tree
-    let syntax_tree = syn::parse(input).unwrap();
-
-    // Build the trait implementation
-    impl_hello_world(&syntax_tree)
-}
-
 #[proc_macro_derive(Repository, attributes(entity, id))]
 pub fn repository_derive(input: TokenStream) -> TokenStream {
     let syntax_tree = syn::parse(input).unwrap();
 
     implement_repository_trait(&syntax_tree)
-}
-
-fn impl_hello_world(syntax_tree: &syn::DeriveInput) -> TokenStream {
-    let name = &syntax_tree.ident; // Name of the struct
-
-    let gene = quote! {
-        impl HelloWorld for #name {
-            fn hello() {
-                ::rustling_data::SqlRepository::hello();
-            }
-        }
-    };
-    gene.into()
 }
 
 fn implement_repository_trait(syntax_tree: &syn::DeriveInput) -> TokenStream {
