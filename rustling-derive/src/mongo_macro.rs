@@ -1,7 +1,7 @@
+use crate::common::parse_repository_meta;
 use proc_macro::TokenStream;
 use quote::quote;
 use syn;
-use crate::common::parse_repository_meta;
 
 pub fn mongo_repository_derive(input: TokenStream) -> TokenStream {
     let syntax_tree = syn::parse(input).unwrap();
@@ -20,9 +20,9 @@ fn implement_mongo_repository_trait(syntax_tree: &syn::DeriveInput) -> TokenStre
         #[async_trait::async_trait]
         impl Repository<#entity, #id> for #name {
             async fn find_all(&self) -> Result<Vec<#entity>, anyhow::Error> {
-        let mongo_repo = ::rustling_data::MongoDriver::new(self.client.clone(), self.db_name.clone());
-        let result = mongo_repo.find_all::<#entity>(#storage_name).await?;
-        Ok(result)
+                let mongo_repo = ::rustling_data::MongoDriver::new(self.client.clone(), self.db_name.clone());
+                let result = mongo_repo.find_all::<#entity>(#storage_name).await?;
+                Ok(result)
     }
         }
     };

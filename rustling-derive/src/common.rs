@@ -8,11 +8,15 @@ pub struct RepositoryMeta {
 }
 
 pub fn parse_repository_meta(ast: &DeriveInput, storage_attr: &str) -> RepositoryMeta {
-    let entity_attr = ast.attrs.iter()
+    let entity_attr = ast
+        .attrs
+        .iter()
         .find(|a| a.path().is_ident("entity"))
         .expect("Missing #[entity(Type)]");
 
-    let id_attr = ast.attrs.iter()
+    let id_attr = ast
+        .attrs
+        .iter()
         .find(|a| a.path().is_ident("id"))
         .expect("Missing #[id(Type)]");
 

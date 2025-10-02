@@ -1,7 +1,7 @@
+use crate::common::parse_repository_meta;
 use proc_macro::TokenStream;
 use quote::quote;
 use syn;
-use crate::common::parse_repository_meta;
 
 pub fn repository_derive(input: TokenStream) -> TokenStream {
     let syntax_tree = syn::parse(input).unwrap();
