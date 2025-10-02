@@ -20,21 +20,10 @@ fn implement_mongo_repository_trait(syntax_tree: &syn::DeriveInput) -> TokenStre
         #[async_trait::async_trait]
         impl Repository<#entity, #id> for #name {
             async fn find_all(&self) -> Result<Vec<#entity>, anyhow::Error> {
-                use mongodb::bson::doc;
-                use futures::stream::TryStreamExt;
-
-                let collection = self.client.database(&self.db_name)
-                    .collection::<#entity>(#storage_name);
-
-                let mut cursor = collection.find(doc! {}, None).await?;
-                let mut results = Vec::new();
-
-                while let Some(doc) = cursor.try_next().await? {
-                    results.push(doc);
-                }
-
-                Ok(results)
-            }
+        let mongo_repo = ::rustling_data::MongoDriver::new(self.client.clone(), self.db_name.clone());
+        let result = mongo_repo.find_all::<#entity>(#storage_name).await?;
+        Ok(result)
+    }
         }
     };
     generated.into()
