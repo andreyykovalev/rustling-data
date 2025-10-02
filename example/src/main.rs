@@ -77,7 +77,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         test_repo.client
             .database(&test_repo.db_name)
             .collection::<Test>("tests")
-            .insert_one(new_test, None)
+            .insert_one(new_test)
             .await?;
     }
 

@@ -24,7 +24,7 @@ impl MongoDriver {
         T: for<'de> serde::Deserialize<'de> + Unpin + Send + Sync,
     {
         let coll = self.db().collection::<T>(collection);
-        let mut cursor = coll.find(doc! {}, None).await?;
+        let mut cursor = coll.find(doc! {}).await?;
         let mut results = Vec::new();
 
         while let Some(doc) = cursor.try_next().await? {
