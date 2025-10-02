@@ -4,12 +4,11 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-diesel = { version = "2.1", features = ["postgres"] }
-dotenvy = "0.15"
-rustling-api = { path = "../rustling-api" }
 rustling-derive = { path = "../rustling-derive" }
-rustling-core = { path = "../rustling-core" }
-repository = "0.0.2"
+rustling-data = { path = "../rustling-data" }
 serde = { version = "1.0.227", features = ["derive"] }
-sqlx = "0.7.4"
+sqlx = "0.8.6"
 tokio = "1.47.1"
+async-trait = "0.1.89"
+anyhow = "1.0.100"
+bson = "3.0.0"

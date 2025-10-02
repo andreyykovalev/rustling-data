@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "rustling-derive",
+    "rustling-data",
+    "example",
+]
+resolver = "2"
