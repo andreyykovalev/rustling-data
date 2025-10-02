@@ -4,6 +4,7 @@ use proc_macro::TokenStream;
 
 mod mongo_macro;
 mod postgres_macro;
+mod common;
 
 #[proc_macro_derive(Repository, attributes(entity, id, table))]
 pub fn repository_derive(input: TokenStream) -> TokenStream {
