@@ -1,6 +1,6 @@
-use mongodb::{Client, Database};
-use mongodb::bson::doc;
 use futures::stream::TryStreamExt;
+use mongodb::bson::doc;
+use mongodb::{Client, Database};
 
 pub struct MongoDriver {
     client: Client,

@@ -1,10 +1,16 @@
 use anyhow;
-use mongodb::bson::oid::ObjectId;
+
+use rustling_data::Client;
+use rustling_data::ClientOptions;
 use rustling_data::api::Repository;
+use rustling_data::bson::oid::ObjectId;
 use rustling_derive::{MongoRepository, Repository};
-use sqlx::FromRow;
-use sqlx::postgres::PgPoolOptions;
-use serde::{Serialize, Deserialize};
+
+use rustling_data::PgPool;
+use rustling_data::PgPoolOptions;
+use serde::{Deserialize, Serialize};
+
+pub use sqlx::FromRow;
 
 #[derive(Debug, FromRow)]
 struct User {
@@ -24,23 +30,20 @@ pub struct Test {
 #[entity(User)]
 #[id(i32)]
 pub struct UserRepository {
-    pool: sqlx::PgPool,
+    pool: PgPool,
 }
-
-use mongodb::Client;
-use mongodb::options::ClientOptions;
 
 #[derive(MongoRepository)]
 #[entity(Test)]
 #[id(bson::oid::ObjectId)]
 #[collection("tests")]
 pub struct TestRepository {
-    client: mongodb::Client,
+    client: Client,
     db_name: String,
 }
 
 impl UserRepository {
-    pub fn new(pool: sqlx::PgPool) -> Self {
+    pub fn new(pool: PgPool) -> Self {
         Self { pool }
     }
 }
@@ -56,7 +59,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // let users = <UserRepository as Repository<User, i32>>::find_all(&repo)?;
     let users = repo.find_all().await?;
     println!("Fetched {:?} users", users);
-
 
     let client_options = ClientOptions::parse("mongodb://admin:secret@localhost:27017").await?;
     let client = Client::with_options(client_options)?;
@@ -74,7 +76,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             name: "Alice".to_string(),
             email: "alice@example.com".to_string(),
         };
-        test_repo.client
+        test_repo
+            .client
             .database(&test_repo.db_name)
             .collection::<Test>("tests")
             .insert_one(new_test)
@@ -84,5 +87,4 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let tests = test_repo.find_all().await?;
     println!("All Test documents from MongoDB: {:?}", tests);
     Ok(())
-
 }
