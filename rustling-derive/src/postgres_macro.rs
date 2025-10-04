@@ -20,9 +20,6 @@ fn implement_repository_trait(syntax_tree: &syn::DeriveInput) -> TokenStream {
         #[async_trait::async_trait]
         impl Repository<#entity, #id> for #name {
             async fn find_all(&self) -> Result<Vec<#entity>, anyhow::Error> {
-                // FIX: Call PostgresDriver::find_all as a static associated function,
-                // passing a REFERENCE (&self.pool) instead of cloning the owned value.
-                // &PgPool implements sqlx::Executor, satisfying the trait bound.
                 let result = ::rustling_data::PostgresDriver::find_all(
                     &self.pool, // Executor (&PgPool) is passed as the first argument
                     #storage_name
