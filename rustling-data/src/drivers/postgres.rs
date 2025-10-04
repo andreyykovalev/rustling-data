@@ -1,36 +1,28 @@
 use sqlx::postgres::PgRow;
-use sqlx::{FromRow, Postgres};
+use sqlx::{Executor, FromRow, Postgres};
 
-pub struct PostgresDriver {
-    pool: sqlx::PgPool,
-}
-
+pub struct PostgresDriver;
 impl PostgresDriver {
-    pub fn new(pool: sqlx::PgPool) -> Self {
-        Self { pool }
-    }
-
-    pub async fn find_all<T>(&self, table: &str) -> Result<Vec<T>, sqlx::Error>
+    pub async fn find_all<'e, T, E>(executor: E, table: &str) -> Result<Vec<T>, sqlx::Error>
     where
-        T: for<'r> sqlx::FromRow<'r, sqlx::postgres::PgRow> + Send + Unpin,
+        // E must be an Executor for Postgres, associated with the lifetime 'e.
+        E: Executor<'e, Database = Postgres>,
+        T: for<'r> sqlx::FromRow<'r, PgRow> + Send + Unpin,
     {
         let query = format!("SELECT * FROM {}", table);
-        Ok(sqlx::query_as::<_, T>(&query).fetch_all(&self.pool).await?)
+        // Execute against the generic executor
+        Ok(sqlx::query_as::<_, T>(&query).fetch_all(executor).await?)
     }
 
-    pub async fn insert<'a, T>(
-        // 1. Re-introduce lifetime 'a
-        &self,
+    pub async fn insert<'e, T, E>(
+        executor: E,
         table: &str,
         columns: &[&str],
-        values: &'a [T], // 2. Tie the input slice to lifetime 'a
+        values: &'e [T],
     ) -> Result<u64, sqlx::Error>
     where
-        // 3. FIX E0521: Use lifetime 'a for Encode.
-        // This tells the compiler the borrowed data 'v' lives at least as long as 'a',
-        // satisfying the borrow checker for the async operation.
-        T: sqlx::Encode<'a, Postgres> + sqlx::Type<Postgres> + Send + Sync + 'a,
-        // Note: Clone is removed as we now bind by reference.
+        E: Executor<'e, Database = Postgres>,
+        T: sqlx::Encode<'e, Postgres> + sqlx::Type<Postgres> + Send + Sync + 'e,
     {
         if columns.len() != values.len() {
             return Err(sqlx::Error::Protocol(
@@ -48,45 +40,46 @@ impl PostgresDriver {
             placeholders.join(", ")
         );
 
-        // FIX E0597: Resolve query string lifetime by leaking the box. (Necessary for dynamic queries)
         let box_str = query_string.into_boxed_str();
         let static_str: &'static str = Box::leak(box_str);
         let mut q = sqlx::query(static_str);
 
-        // 4. Bind by reference. The 'a lifetime makes this safe now.
         for v in values {
             q = q.bind(v);
         }
 
-        let result = q.execute(&self.pool).await?;
+        // Execute against the generic executor
+        let result = q.execute(executor).await?;
         Ok(result.rows_affected())
     }
 
-    pub async fn find_one<T>(
-        &self,
+    pub async fn find_one<'e, T, E>(
+        executor: E,
         table: &str,
         id_column: &str,
         id_value: i32,
     ) -> Result<Option<T>, sqlx::Error>
     where
+        E: Executor<'e, Database = Postgres>,
         T: for<'r> FromRow<'r, PgRow> + Send + Unpin,
     {
         let query = format!("SELECT * FROM {} WHERE {} = $1", table, id_column);
         sqlx::query_as::<_, T>(&query)
             .bind(id_value)
-            .fetch_optional(&self.pool)
+            .fetch_optional(executor)
             .await
     }
-    pub async fn update<'a, T>(
-        &self,
+
+    pub async fn update<'e, T, E>(
+        executor: E,
         table: &str,
         id_column: &str,
         id_value: i32,
-        updates: &'a [(&str, T)], // Tie the input slice to lifetime 'a
+        updates: &'e [(&str, T)],
     ) -> Result<u64, sqlx::Error>
     where
-        // Use lifetime 'a for Encode. Remove Clone constraint.
-        T: sqlx::Encode<'a, Postgres> + sqlx::Type<Postgres> + Send + Sync + 'a,
+        E: Executor<'e, Database = Postgres>,
+        T: sqlx::Encode<'e, Postgres> + sqlx::Type<Postgres> + Send + Sync + 'e,
     {
         // 1. Build the SET clause and calculate the ID placeholder index
         let set_clause: Vec<String> = (1..=updates.len())
@@ -117,21 +110,25 @@ impl PostgresDriver {
         // Bind the ID value last (corresponds to $id_placeholder_index)
         q = q.bind(id_value);
 
-        let result = q.execute(&self.pool).await?;
+        // Execute against the generic executor
+        let result = q.execute(executor).await?;
         Ok(result.rows_affected())
     }
 
-    // 🔹 Delete
-    pub async fn delete(
-        &self,
+    pub async fn delete<'e, E>(
+        executor: E,
         table: &str,
         id_column: &str,
         id_value: i32,
-    ) -> Result<u64, sqlx::Error> {
+    ) -> Result<u64, sqlx::Error>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
         let query = format!("DELETE FROM {} WHERE {} = $1", table, id_column);
         let result = sqlx::query(&query)
             .bind(id_value)
-            .execute(&self.pool)
+            // Execute against the generic executor
+            .execute(executor)
             .await?;
         Ok(result.rows_affected())
     }
