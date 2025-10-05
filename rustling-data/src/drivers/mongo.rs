@@ -2,7 +2,7 @@ use futures::stream::TryStreamExt;
 use mongodb::{
     Client, Collection, Database,
     bson::{Document, doc, oid::ObjectId},
-    options::{ClientOptions, FindOneAndUpdateOptions, ReturnDocument},
+    options::{FindOneAndUpdateOptions, ReturnDocument},
 };
 use serde::{Deserialize, Serialize};
 
@@ -30,7 +30,6 @@ impl MongoDriver {
         self.db().collection::<T>(name)
     }
 
-    /// ✅ Insert one document
     pub async fn insert_one<T>(&self, collection: &str, doc: &T) -> Result<ObjectId, anyhow::Error>
     where
         T: Serialize + Send + Sync,
@@ -40,7 +39,6 @@ impl MongoDriver {
         Ok(result.inserted_id.as_object_id().unwrap())
     }
 
-    /// ✅ Find all documents
     pub async fn find_all<T>(&self, collection: &str) -> Result<Vec<T>, anyhow::Error>
     where
         T: for<'de> Deserialize<'de> + Unpin + Send + Sync,
@@ -56,7 +54,6 @@ impl MongoDriver {
         Ok(results)
     }
 
-    /// ✅ Find one document by filter
     pub async fn find_one<T>(
         &self,
         collection: &str,
@@ -70,7 +67,6 @@ impl MongoDriver {
         Ok(doc)
     }
 
-    /// ✅ Update one document (by filter)
     pub async fn update_one<T>(
         &self,
         collection: &str,
@@ -92,7 +88,6 @@ impl MongoDriver {
         Ok(updated)
     }
 
-    /// ✅ Delete one document
     pub async fn delete_one(
         &self,
         collection: &str,
