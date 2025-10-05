@@ -18,7 +18,7 @@ fn implement_mongo_repository_trait(syntax_tree: &syn::DeriveInput) -> TokenStre
 
     let generated = quote! {
         #[async_trait::async_trait]
-        impl Repository<#entity, #id> for #name {
+        impl MongoRepository<#entity, #id> for #name {
             async fn find_all(&self) -> Result<Vec<#entity>, anyhow::Error> {
                 let mongo_repo = ::rustling_data::MongoDriver::new(self.client.clone(), self.db_name.clone());
                 let result = mongo_repo.find_all::<#entity>(#storage_name).await?;
