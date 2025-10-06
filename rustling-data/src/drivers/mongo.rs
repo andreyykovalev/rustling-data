@@ -1,9 +1,11 @@
+use crate::bson::to_document;
 use futures::stream::TryStreamExt;
 use mongodb::{
     Client, Collection, Database,
     bson::{Document, doc, oid::ObjectId},
     options::{FindOneAndUpdateOptions, ReturnDocument},
 };
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
 pub struct MongoDriver {
@@ -71,21 +73,20 @@ impl MongoDriver {
         &self,
         collection: &str,
         filter: Document,
-        update: Document,
+        doc: &T,
     ) -> Result<Option<T>, anyhow::Error>
     where
-        T: for<'de> Deserialize<'de> + Unpin + Send + Sync,
+        T: Serialize + DeserializeOwned + Unpin + Send + Sync,
     {
         let coll = self.db().collection::<T>(collection);
 
-        let opts = FindOneAndUpdateOptions::builder()
-            .return_document(ReturnDocument::After)
-            .build();
+        let mut update_doc = to_document(doc)?;
+        update_doc.remove("_id"); // important
+        let update_doc = doc! { "$set": update_doc };
 
-        let updated = coll
-            .find_one_and_update(filter, doc! { "$set": update })
-            .await?;
-        Ok(updated)
+        coll.find_one_and_update(filter.clone(), update_doc).await?;
+        let result: Option<T> = coll.find_one(filter).await?;
+        Ok(result)
     }
 
     pub async fn delete_one(

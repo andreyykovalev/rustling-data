@@ -126,36 +126,36 @@ async fn test_update_one() {
     let (_client, _db, _container) = setup_mongo().await;
     let mongo_repo = MongoDriver::new(_client.clone(), _db.name().to_string());
 
-    mongo_repo
-        .insert_one(
-            "users",
-            &User {
-                id: None,
-                name: "David".into(),
-                email: "david@example.com".into(),
-            },
-        )
+    // Insert initial document
+    let user = User {
+        id: None,
+        name: "David".into(),
+        email: "david@example.com".into(),
+    };
+    mongo_repo.insert_one("users", &user).await.unwrap();
+
+    // Update the document
+    let mut updated_user = user.clone();
+    updated_user.name = "Dave".into();
+    let updated: Option<User> = mongo_repo
+        .update_one("users", doc! { "email": "david@example.com" }, &updated_user)
         .await
         .unwrap();
 
-    // update the document
-    mongo_repo
-        .update_one::<User>(
-            "users",
-            doc! { "email": "david@example.com" },
-            doc! { "name": "Dave" },
-        )
-        .await
-        .unwrap();
+    // Check that update returned the new document
+    let found = updated.unwrap();
+    assert_eq!(found.name, "Dave");
+    assert_eq!(found.email, "david@example.com");
 
-    let found: User = mongo_repo
+    // Optional: double-check by fetching from DB
+    let fetched: User = mongo_repo
         .find_one("users", doc! { "email": "david@example.com" })
         .await
         .unwrap()
         .unwrap();
-
-    assert_eq!(found.name, "Dave");
+    assert_eq!(fetched.name, "Dave");
 }
+
 
 #[tokio::test]
 async fn test_delete_one() {

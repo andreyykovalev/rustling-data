@@ -1,10 +1,12 @@
 use anyhow::Result;
+use bson::{doc, to_document};
 use rustling_data::Client;
 use rustling_data::ClientOptions;
 use rustling_derive::MongoRepository;
 use rustling_data::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
 use rustling_data::api::MongoRepository;
+use rustling_data::mongodb;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct User {
@@ -63,6 +65,8 @@ async fn main() -> Result<()> {
     // Update a user
     if let Some(mut first_user) = users.first().cloned() {
         first_user.email = "alice@newdomain.com".to_string();
+
+        // Now works without manual Document conversion
         let updated = repo.update_one(&first_user.id, &first_user).await?;
         println!("Updated user: {:?}", updated);
     }
