@@ -10,6 +10,7 @@ use testcontainers_modules::{
     testcontainers::{ContainerAsync, runners::AsyncRunner},
 };
 use tokio::time::sleep;
+use rustling_data::MongoDriver;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 struct User {
@@ -51,127 +52,134 @@ pub async fn setup_mongo() -> (Client, Database, ContainerAsync<mongo::Mongo>) {
 
 #[tokio::test]
 async fn test_insert_one() {
-    let (_client, db, _container) = setup_mongo().await;
-    let collection = db.collection::<User>("users");
+    let (_client, _db, _container) = setup_mongo().await;
 
     let user = User {
         id: None,
         name: "Alice".into(),
         email: "alice@example.com".into(),
     };
-    collection.insert_one(user.clone()).await.unwrap();
 
-    let found = collection
-        .find_one(doc! { "email": "alice@example.com" })
+    let mongo_repo = MongoDriver::new(_client.clone(), _db.name().to_string());
+
+    let inserted_id = mongo_repo.insert_one("users", &user).await.unwrap();
+
+    let found: User = mongo_repo
+        .find_one("users", doc! { "_id": inserted_id })
         .await
         .unwrap()
         .unwrap();
+
     assert_eq!(found.name, "Alice");
+    assert_eq!(found.email, "alice@example.com");
 }
 
 #[tokio::test]
 async fn test_find_all() {
-    let (_client, db, _container) = setup_mongo().await;
-    let collection = db.collection::<User>("users");
+    let (_client, _db, _container) = setup_mongo().await;
+    let mongo_repo = MongoDriver::new(_client.clone(), _db.name().to_string());
 
-    collection
-        .insert_one(User {
+    mongo_repo.insert_one(
+        "users",
+        &User {
             id: None,
             name: "Bob".into(),
             email: "bob@example.com".into(),
-        })
+        },
+    )
         .await
         .unwrap();
 
-    let users: Vec<User> = collection
-        .find(doc! {})
-        .await
-        .unwrap()
-        .try_collect()
-        .await
-        .unwrap();
+    let users: Vec<User> = mongo_repo.find_all("users").await.unwrap();
     assert_eq!(users.len(), 1);
     assert_eq!(users[0].name, "Bob");
 }
 
 #[tokio::test]
 async fn test_find_one() {
-    let (_client, db, _container) = setup_mongo().await;
-    let collection = db.collection::<User>("users");
+    let (_client, _db, _container) = setup_mongo().await;
+    let mongo_repo = MongoDriver::new(_client.clone(), _db.name().to_string());
 
-    collection
-        .insert_one(User {
-            id: None,
-            name: "Charlie".into(),
-            email: "charlie@example.com".into(),
-        })
-        .await
-        .unwrap();
-
-    let found = collection
-        .find_one(doc! { "email": "charlie@example.com" })
-        .await
-        .unwrap();
-    assert!(found.is_some());
-    assert_eq!(found.unwrap().name, "Charlie");
-}
-
-#[tokio::test]
-async fn test_update_one() {
-    let (_client, db, _container) = setup_mongo().await;
-    let collection = db.collection::<User>("users");
-
-    collection
-        .insert_one(User {
-            id: None,
-            name: "David".into(),
-            email: "david@example.com".into(),
-        })
-        .await
-        .unwrap();
-
-    collection
-        .update_one(
-            doc! { "email": "david@example.com" },
-            doc! { "$set": { "name": "Dave" } },
+    mongo_repo
+        .insert_one(
+            "users",
+            &User {
+                id: None,
+                name: "Charlie".into(),
+                email: "charlie@example.com".into(),
+            },
         )
         .await
         .unwrap();
 
-    let found = collection
-        .find_one(doc! { "email": "david@example.com" })
+    let found: User = mongo_repo
+        .find_one("users", doc! { "email": "charlie@example.com" })
         .await
         .unwrap()
         .unwrap();
+
+    assert_eq!(found.name, "Charlie");
+}
+
+#[tokio::test]
+async fn test_update_one() {
+    let (_client, _db, _container) = setup_mongo().await;
+    let mongo_repo = MongoDriver::new(_client.clone(), _db.name().to_string());
+
+    mongo_repo
+        .insert_one(
+            "users",
+            &User {
+                id: None,
+                name: "David".into(),
+                email: "david@example.com".into(),
+            },
+        )
+        .await
+        .unwrap();
+
+    // update the document
+    mongo_repo
+        .update_one::<User>(
+            "users",
+            doc! { "email": "david@example.com" },
+            doc! { "name": "Dave" },
+        )
+        .await
+        .unwrap();
+
+    let found: User = mongo_repo
+        .find_one("users", doc! { "email": "david@example.com" })
+        .await
+        .unwrap()
+        .unwrap();
+
     assert_eq!(found.name, "Dave");
 }
 
 #[tokio::test]
 async fn test_delete_one() {
-    let (_client, db, _container) = setup_mongo().await;
-    let collection = db.collection::<User>("users");
+    let (_client, _db, _container) = setup_mongo().await;
+    let mongo_repo = MongoDriver::new(_client.clone(), _db.name().to_string());
 
-    collection
-        .insert_one(User {
-            id: None,
-            name: "Eve".into(),
-            email: "eve@example.com".into(),
-        })
+    mongo_repo
+        .insert_one(
+            "users",
+            &User {
+                id: None,
+                name: "Eve".into(),
+                email: "eve@example.com".into(),
+            },
+        )
         .await
         .unwrap();
 
-    let delete_result = collection
-        .delete_one(doc! { "email": "eve@example.com" })
+    let deleted = mongo_repo
+        .delete_one("users", doc! { "email": "eve@example.com" })
         .await
         .unwrap();
-    assert_eq!(delete_result.deleted_count, 1);
+    assert_eq!(deleted, 1);
 
-    let remaining: Vec<User> = collection
-        .find(doc! {})
-        .await
-        .unwrap()
-        .try_collect()
-        .await
-        .unwrap();
-    assert!(remaining.is_empty());
+    let users: Vec<User> = mongo_repo.find_all("users").await.unwrap();
+    assert!(users.is_empty());
 }
