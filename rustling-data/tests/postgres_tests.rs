@@ -94,19 +94,21 @@ pub async fn start_test_transaction() -> Transaction<'static, Postgres> {
 async fn test_insert() {
     // 1. Start isolated transaction
     let mut tx = start_test_transaction().await;
+
     // 2. Use the driver as a stateless utility, passing the transaction as the Executor
-    let inserted = PostgresDriver::insert(
+    let id = PostgresDriver::insert(
         tx.as_mut(), // Pass the transaction executor
         "users",
         &["name", "email"],
-        &[&"Alice", &"alice@example.com"],
+        vec![&"Alice", &"alice@example.com"],
     )
-    .await
-    .expect("Insert failed");
+        .await
+        .expect("Insert failed");
 
-    assert_eq!(inserted, 1);
+    // 3. Assert that we got a valid ID back (positive integer)
+    assert!(id > 0, "Expected a positive ID, got {}", id);
 
-    // 3. Rollback to clean up changes
+    // 4. Rollback to clean up changes
     tx.rollback().await.unwrap();
 }
 
@@ -115,22 +117,24 @@ async fn test_find_all() {
     let mut tx = start_test_transaction().await;
 
     // Insert data within the transaction
-    PostgresDriver::insert(
-        tx.as_mut(), // Pass the transaction executor
+    let _id = PostgresDriver::insert(
+        tx.as_mut(),
         "users",
         &["name", "email"],
-        &[&"Bob", &"bob@example.com"],
+        vec![&"Bob", &"bob@example.com"],
     )
-    .await
-    .unwrap();
+        .await
+        .expect("Insert failed");
 
     // Find all data within the transaction
     let users: Vec<User> = PostgresDriver::find_all(tx.as_mut(), "users")
         .await
-        .unwrap();
+        .expect("Find all failed");
+
     assert_eq!(users.len(), 1);
     assert_eq!(users[0].name, "Bob");
 
+    // Roll back so the test doesn't persist changes
     tx.rollback().await.unwrap();
 }
 
@@ -138,29 +142,31 @@ async fn test_find_all() {
 async fn test_find_one() {
     let mut tx = start_test_transaction().await;
 
-    PostgresDriver::insert(
-        tx.as_mut(), // Pass the transaction executor
+    // Insert a test record and capture its ID
+    let id = PostgresDriver::insert(
+        tx.as_mut(),
         "users",
         &["name", "email"],
-        &[&"Charlie", &"charlie@example.com"],
+        vec![&"Charlie", &"charlie@example.com"],
     )
-    .await
-    .unwrap();
-
-    let users: Vec<User> = PostgresDriver::find_all(tx.as_mut(), "users")
         .await
-        .unwrap();
+        .expect("Insert failed");
+
+    // Fetch it by ID
     let user: Option<User> = PostgresDriver::find_one(
-        tx.as_mut(), // Pass the transaction executor
+        tx.as_mut(),
         "users",
         "id",
-        users[0].id,
+        id,
     )
-    .await
-    .unwrap();
+        .await
+        .expect("Find one failed");
 
+    // Assertions
     assert!(user.is_some());
-    assert_eq!(user.unwrap().name, "Charlie");
+    let user = user.unwrap();
+    assert_eq!(user.name, "Charlie");
+    assert_eq!(user.email, "charlie@example.com");
 
     tx.rollback().await.unwrap();
 }
@@ -169,36 +175,35 @@ async fn test_find_one() {
 async fn test_update() {
     let mut tx = start_test_transaction().await;
 
-    PostgresDriver::insert(
-        tx.as_mut(), // Pass the transaction executor
+    // Insert a record
+    let id = PostgresDriver::insert(
+        tx.as_mut(),
         "users",
         &["name", "email"],
-        &[&"Dave", &"dave@example.com"],
+        vec![&"Dave", &"dave@example.com"],
     )
-    .await
-    .unwrap();
-
-    let users: Vec<User> = PostgresDriver::find_all(tx.as_mut(), "users")
         .await
-        .unwrap();
+        .expect("Insert failed");
 
+    // Update that record
     let updated_rows = PostgresDriver::update(
-        tx.as_mut(), // Pass the transaction executor
+        tx.as_mut(),
         "users",
         "id",
-        users[0].id,
-        &[("name", &"David"), ("email", &"david@example.com")],
+        id,
+        &["name", "email"],
+        vec![&"David", &"david@example.com"],
     )
-    .await
-    .unwrap();
+        .await
+        .expect("Update failed");
 
     assert_eq!(updated_rows, 1);
 
-    // Use the driver's find_one method to confirm the update
-    let updated_user: User = PostgresDriver::find_one(tx.as_mut(), "users", "id", users[0].id)
+    // Confirm the update
+    let updated_user: User = PostgresDriver::find_one(tx.as_mut(), "users", "id", id)
         .await
-        .unwrap()
-        .unwrap();
+        .expect("Find one failed")
+        .expect("User not found");
 
     assert_eq!(updated_user.name, "David");
     assert_eq!(updated_user.email, "david@example.com");
@@ -210,32 +215,33 @@ async fn test_update() {
 async fn test_delete() {
     let mut tx = start_test_transaction().await;
 
-    PostgresDriver::insert(
-        tx.as_mut(), // Pass the transaction executor
+    // Insert a record
+    let id = PostgresDriver::insert(
+        tx.as_mut(),
         "users",
         &["name", "email"],
-        &[&"Eve", &"eve@example.com"],
+        vec![&"Eve", &"eve@example.com"],
     )
-    .await
-    .unwrap();
-
-    let users: Vec<User> = PostgresDriver::find_all(tx.as_mut(), "users")
         .await
-        .unwrap();
+        .expect("Insert failed");
+
+    // Delete the record
     let deleted_rows = PostgresDriver::delete(
-        tx.as_mut(), // Pass the transaction executor
+        tx.as_mut(),
         "users",
         "id",
-        users[0].id,
+        id,
     )
-    .await
-    .unwrap();
+        .await
+        .expect("Delete failed");
 
     assert_eq!(deleted_rows, 1);
 
+    // Confirm that it's gone
     let remaining: Vec<User> = PostgresDriver::find_all(tx.as_mut(), "users")
         .await
-        .unwrap();
+        .expect("Find all failed");
+
     assert!(remaining.is_empty());
 
     tx.rollback().await.unwrap();
