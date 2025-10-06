@@ -1,6 +1,6 @@
 use anyhow::Result;
 use rustling_data::{PgPool, PgPoolOptions};
-use rustling_data::api::Repository;
+use rustling_data::api::CrudRepository;
 use rustling_derive::{Entity, Repository};
 use sqlx::FromRow;
 

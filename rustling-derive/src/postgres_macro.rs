@@ -19,7 +19,7 @@ fn implement_repository_trait(ast: &DeriveInput) -> TokenStream {
 
     let gene = quote! {
         #[async_trait::async_trait]
-        impl rustling_data::api::Repository<#entity_type, #id_type> for #name {
+        impl rustling_data::api::CrudRepository<#entity_type, #id_type> for #name {
             async fn find_all(&self) -> anyhow::Result<Vec<#entity_type>> {
                 let result = rustling_data::PostgresDriver::find_all(&self.pool, #table_name).await?;
                 Ok(result)
