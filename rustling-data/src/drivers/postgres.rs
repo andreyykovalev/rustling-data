@@ -1,5 +1,5 @@
 use sqlx::postgres::PgRow;
-use sqlx::{Executor, FromRow, Postgres};
+use sqlx::{Encode, Executor, FromRow, Postgres, Row, Type};
 
 pub struct PostgresDriver;
 impl PostgresDriver {
@@ -14,43 +14,33 @@ impl PostgresDriver {
         Ok(sqlx::query_as::<_, T>(&query).fetch_all(executor).await?)
     }
 
-    pub async fn insert<'e, T, E>(
+    pub async fn insert<'e, E>(
         executor: E,
         table: &str,
         columns: &[&str],
-        values: &'e [T],
-    ) -> Result<u64, sqlx::Error>
+        values: Vec<&'e (impl Encode<'e, Postgres> + Type<Postgres>)>,
+    ) -> Result<i32, sqlx::Error>
     where
         E: Executor<'e, Database = Postgres>,
-        T: sqlx::Encode<'e, Postgres> + sqlx::Type<Postgres> + Send + Sync + 'e,
     {
-        if columns.len() != values.len() {
-            return Err(sqlx::Error::Protocol(
-                "Column count must match value count".to_string(),
-            ));
-        }
-
-        let cols = columns.join(", ");
         let placeholders: Vec<String> = (1..=columns.len()).map(|i| format!("${}", i)).collect();
-
         let query_string = format!(
-            "INSERT INTO {} ({}) VALUES ({})",
+            "INSERT INTO {} ({}) VALUES ({}) RETURNING id",
             table,
-            cols,
+            columns.join(", "),
             placeholders.join(", ")
         );
 
         let box_str = query_string.into_boxed_str();
         let static_str: &'static str = Box::leak(box_str);
         let mut q = sqlx::query(static_str);
-
         for v in values {
             q = q.bind(v);
         }
 
-        // Execute against the generic executor
-        let result = q.execute(executor).await?;
-        Ok(result.rows_affected())
+        let row = q.fetch_one(executor).await?;
+        let id: i32 = row.try_get("id")?;
+        Ok(id)
     }
 
     pub async fn find_one<'e, T, E>(
@@ -70,47 +60,37 @@ impl PostgresDriver {
             .await
     }
 
-    pub async fn update<'e, T, E>(
+    pub async fn update<'e, E>(
         executor: E,
         table: &str,
         id_column: &str,
         id_value: i32,
-        updates: &'e [(&str, T)],
+        columns: &[&str],
+        values: Vec<&'e (impl Encode<'e, Postgres> + Type<Postgres>)>,
     ) -> Result<u64, sqlx::Error>
     where
         E: Executor<'e, Database = Postgres>,
-        T: sqlx::Encode<'e, Postgres> + sqlx::Type<Postgres> + Send + Sync + 'e,
     {
-        // 1. Build the SET clause and calculate the ID placeholder index
-        let set_clause: Vec<String> = (1..=updates.len())
-            .map(|i| format!("{} = ${}", updates[i - 1].0, i))
-            .collect();
-
-        let id_placeholder_index = updates.len() + 1;
+        let set_clause: Vec<String> = columns.iter().enumerate().map(|(i, c)| format!("{} = ${}", c, i+1)).collect();
+        let id_placeholder = columns.len() + 1;
 
         let query_string = format!(
             "UPDATE {} SET {} WHERE {} = ${}",
             table,
             set_clause.join(", "),
             id_column,
-            id_placeholder_index
+            id_placeholder
         );
 
-        // Resolve query string lifetime by leaking the box.
         let box_str = query_string.into_boxed_str();
         let static_str: &'static str = Box::leak(box_str);
-
         let mut q = sqlx::query(static_str);
-
-        // Bind the update values first (by reference)
-        for (_, value) in updates {
-            q = q.bind(value);
+        for v in values {
+            q = q.bind(v);
         }
 
-        // Bind the ID value last (corresponds to $id_placeholder_index)
         q = q.bind(id_value);
 
-        // Execute against the generic executor
         let result = q.execute(executor).await?;
         Ok(result.rows_affected())
     }

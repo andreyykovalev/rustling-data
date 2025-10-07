@@ -1,12 +1,12 @@
 use anyhow::Result;
-use bson::{doc, to_document};
+use bson::doc;
+use rustling_data::api::CrudRepository;
+use rustling_data::bson::oid::ObjectId;
+use rustling_data::mongodb;
 use rustling_data::Client;
 use rustling_data::ClientOptions;
 use rustling_derive::MongoRepository;
-use rustling_data::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
-use rustling_data::api::MongoRepository;
-use rustling_data::mongodb;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct User {
