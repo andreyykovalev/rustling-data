@@ -72,6 +72,8 @@ async fn test_insert_one() {
 
     assert_eq!(found.name, "Alice");
     assert_eq!(found.email, "alice@example.com");
+
+    drop(_container);
 }
 
 #[tokio::test]
@@ -93,6 +95,8 @@ async fn test_find_all() {
     let users: Vec<User> = mongo_repo.find_all("users").await.unwrap();
     assert_eq!(users.len(), 1);
     assert_eq!(users[0].name, "Bob");
+
+    drop(_container);
 }
 
 #[tokio::test]
@@ -119,6 +123,8 @@ async fn test_find_one() {
         .unwrap();
 
     assert_eq!(found.name, "Charlie");
+
+    drop(_container);
 }
 
 #[tokio::test]
@@ -154,6 +160,8 @@ async fn test_update_one() {
         .unwrap()
         .unwrap();
     assert_eq!(fetched.name, "Dave");
+
+    drop(_container);
 }
 
 
@@ -182,4 +190,6 @@ async fn test_delete_one() {
 
     let users: Vec<User> = mongo_repo.find_all("users").await.unwrap();
     assert!(users.is_empty());
+
+    drop(_container);
 }
