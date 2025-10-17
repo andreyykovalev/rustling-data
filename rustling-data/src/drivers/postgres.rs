@@ -1,17 +1,22 @@
-use sqlx::postgres::PgRow;
-use sqlx::{Encode, Executor, FromRow, Postgres, Row, Type};
+use crate::api::RepositoryError;
+use sqlx::{Encode, Executor, FromRow, Postgres, Row, Type, postgres::PgRow};
 
 pub struct PostgresDriver;
+
 impl PostgresDriver {
-    pub async fn find_all<'e, T, E>(executor: E, table: &str) -> Result<Vec<T>, sqlx::Error>
+    pub async fn find_all<'e, T, E>(
+        executor: E,
+        table: &str
+    ) -> Result<Vec<T>, RepositoryError<sqlx::Error>>
     where
-        // E must be an Executor for Postgres, associated with the lifetime 'e.
         E: Executor<'e, Database = Postgres>,
-        T: for<'r> sqlx::FromRow<'r, PgRow> + Send + Unpin,
+        T: for<'r> FromRow<'r, PgRow> + Send + Unpin,
     {
         let query = format!("SELECT * FROM {}", table);
-        // Execute against the generic executor
-        Ok(sqlx::query_as::<_, T>(&query).fetch_all(executor).await?)
+        sqlx::query_as::<_, T>(&query)
+            .fetch_all(executor)
+            .await
+            .map_err(RepositoryError::ConnectionError)
     }
 
     pub async fn insert<'e, E>(
@@ -19,7 +24,7 @@ impl PostgresDriver {
         table: &str,
         columns: &[&str],
         values: Vec<&'e (impl Encode<'e, Postgres> + Type<Postgres>)>,
-    ) -> Result<i32, sqlx::Error>
+    ) -> Result<i32, RepositoryError<sqlx::Error>>
     where
         E: Executor<'e, Database = Postgres>,
     {
@@ -38,9 +43,18 @@ impl PostgresDriver {
             q = q.bind(v);
         }
 
-        let row = q.fetch_one(executor).await?;
-        let id: i32 = row.try_get("id")?;
-        Ok(id)
+        q.fetch_one(executor)
+            .await
+            .map_err(|e| match e {
+                sqlx::Error::Database(db_err) => {
+                    RepositoryError::ConstraintViolation(db_err.message().to_string())
+                }
+                other => RepositoryError::ConnectionError(other),
+            })
+            .and_then(|row| {
+                row.try_get::<i32, _>("id")
+                    .map_err(|e| RepositoryError::Unknown(e.to_string()))
+            })
     }
 
     pub async fn find_one<'e, T, E>(
@@ -48,7 +62,7 @@ impl PostgresDriver {
         table: &str,
         id_column: &str,
         id_value: i32,
-    ) -> Result<Option<T>, sqlx::Error>
+    ) -> Result<Option<T>, RepositoryError<sqlx::Error>>
     where
         E: Executor<'e, Database = Postgres>,
         T: for<'r> FromRow<'r, PgRow> + Send + Unpin,
@@ -58,6 +72,7 @@ impl PostgresDriver {
             .bind(id_value)
             .fetch_optional(executor)
             .await
+            .map_err(RepositoryError::ConnectionError)
     }
 
     pub async fn update<'e, E>(
@@ -67,11 +82,15 @@ impl PostgresDriver {
         id_value: i32,
         columns: &[&str],
         values: Vec<&'e (impl Encode<'e, Postgres> + Type<Postgres>)>,
-    ) -> Result<u64, sqlx::Error>
+    ) -> Result<u64, RepositoryError<sqlx::Error>>
     where
         E: Executor<'e, Database = Postgres>,
     {
-        let set_clause: Vec<String> = columns.iter().enumerate().map(|(i, c)| format!("{} = ${}", c, i+1)).collect();
+        let set_clause: Vec<String> = columns
+            .iter()
+            .enumerate()
+            .map(|(i, c)| format!("{} = ${}", c, i + 1))
+            .collect();
         let id_placeholder = columns.len() + 1;
 
         let query_string = format!(
@@ -88,11 +107,17 @@ impl PostgresDriver {
         for v in values {
             q = q.bind(v);
         }
-
         q = q.bind(id_value);
 
-        let result = q.execute(executor).await?;
-        Ok(result.rows_affected())
+        q.execute(executor)
+            .await
+            .map_err(|e| match e {
+                sqlx::Error::Database(db_err) => {
+                    RepositoryError::ConstraintViolation(db_err.message().to_string())
+                }
+                other => RepositoryError::ConnectionError(other),
+            })
+            .map(|res| res.rows_affected())
     }
 
     pub async fn delete<'e, E>(
@@ -100,16 +125,16 @@ impl PostgresDriver {
         table: &str,
         id_column: &str,
         id_value: i32,
-    ) -> Result<u64, sqlx::Error>
+    ) -> Result<u64, RepositoryError<sqlx::Error>>
     where
         E: Executor<'e, Database = Postgres>,
     {
         let query = format!("DELETE FROM {} WHERE {} = $1", table, id_column);
         let result = sqlx::query(&query)
             .bind(id_value)
-            // Execute against the generic executor
             .execute(executor)
-            .await?;
+            .await
+            .map_err(RepositoryError::ConnectionError)?;
         Ok(result.rows_affected())
     }
 }

@@ -2,7 +2,6 @@ use anyhow::Result;
 use bson::doc;
 use rustling_data::api::CrudRepository;
 use rustling_data::bson::oid::ObjectId;
-use rustling_data::mongodb;
 use rustling_data::Client;
 use rustling_data::ClientOptions;
 use rustling_derive::MongoRepository;

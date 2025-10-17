@@ -12,6 +12,7 @@ futures = "0.3.31"
 mongodb = "3.3.0"
 tokio = "1.47.1"
 once_cell = "1.21.3"
+thiserror = "1.0.69"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
