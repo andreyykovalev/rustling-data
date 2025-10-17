@@ -3,7 +3,6 @@ use futures::stream::TryStreamExt;
 use mongodb::{
     Client, Collection, Database,
     bson::{Document, doc, oid::ObjectId},
-    options::{FindOneAndUpdateOptions, ReturnDocument},
 };
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};

@@ -1,4 +1,3 @@
-use mongodb::bson::oid::ObjectId;
 use sqlx::{Encode, Postgres, Type};
 
 #[async_trait::async_trait]

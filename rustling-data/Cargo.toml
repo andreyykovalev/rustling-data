@@ -18,3 +18,4 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 testcontainers-modules = { version = "0.7", features = ["postgres", "mongo"] }
 mongodb = "3.3.0"
 futures-util = "0.3"
+ctor = "0.2"
