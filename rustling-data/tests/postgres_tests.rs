@@ -1,3 +1,5 @@
+#![cfg(feature = "postgres")]
+
 use rustling_data::PostgresDriver;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{FromRow, PgPool, Postgres, Transaction};

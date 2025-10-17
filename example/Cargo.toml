@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-rustling-derive = { path = "../rustling-derive" }
-rustling-data = { path = "../rustling-data" }
+rustling-derive = { path = "../rustling-derive", features = ["full"] }
+rustling-data = { path = "../rustling-data", features = ["full"] }
 serde = { version = "1.0.227", features = ["derive"] }
 sqlx = "0.8.6"
 tokio = "1.47.1"

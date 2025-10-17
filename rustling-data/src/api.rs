@@ -1,7 +1,8 @@
+#[cfg(feature = "postgres")]
 use sqlx::{Encode, Postgres, Type};
-use thiserror::Error;
-
+#[cfg(feature = "mongo")]
 pub type MongoError = mongodb::error::Error;
+use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum RepositoryError<DB> {
@@ -24,6 +25,7 @@ pub trait CrudRepository<T, ID, DB> {
     async fn delete_one(&self, id: &ID) -> Result<u64, RepositoryError<DB>>;
 }
 
+#[cfg(feature = "postgres")]
 pub trait PostgresEntity {
     type Id;
     fn columns() -> &'static [&'static str];

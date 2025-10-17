@@ -1,4 +1,5 @@
-use futures_util::stream::TryStreamExt;
+#![cfg(feature = "mongo")]
+
 use mongodb::{
     Client, Database,
     bson::{doc, oid::ObjectId},

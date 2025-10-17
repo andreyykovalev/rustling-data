@@ -5,14 +5,19 @@ use quote::quote;
 use syn::{parse_macro_input, Data, DeriveInput, Fields};
 
 mod common;
+
+#[cfg(feature = "mongo")]
 mod mongo_macro;
+#[cfg(feature = "postgres")]
 mod postgres_macro;
 
+#[cfg(feature = "postgres")]
 #[proc_macro_derive(Repository, attributes(entity, id, table))]
 pub fn repository_derive(input: TokenStream) -> TokenStream {
     postgres_macro::repository_derive(input)
 }
 
+#[cfg(feature = "mongo")]
 #[proc_macro_derive(MongoRepository, attributes(entity, id, collection))]
 pub fn mongo_repository_derive(input: TokenStream) -> TokenStream {
     mongo_macro::mongo_repository_derive(input)
@@ -23,7 +28,6 @@ pub fn derive_entity(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as DeriveInput);
     let name = &ast.ident;
 
-    // Only named structs supported
     let fields: Vec<_> = match &ast.data {
         Data::Struct(data) => match &data.fields {
             Fields::Named(fields_named) => fields_named
