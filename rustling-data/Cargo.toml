@@ -10,7 +10,7 @@ homepage = "https://github.com/andreyykovalev/rustling-data"
 documentation = "https://docs.rs/rustling-data"
 keywords = ["rust", "database", "repository", "postgres", "mongodb"]
 categories = ["database", "asynchronous"]
-readme = "../README.md"
+readme = "README.md"
 
 [dependencies]
 async-trait = "0.1"

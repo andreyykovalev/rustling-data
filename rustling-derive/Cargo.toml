@@ -10,7 +10,7 @@ homepage = "https://github.com/andreyykovalev/rustling-data"
 documentation = "https://docs.rs/rustling-derive"
 keywords = ["rust", "macro", "derive", "repository", "database"]
 categories = ["database", "development-tools"]
-readme = "../README.md"
+readme = "README.md"
 
 [lib]
 proc-macro = true
