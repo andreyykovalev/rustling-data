@@ -2,6 +2,15 @@
 name = "rustling-derive"
 version = "0.1.0"
 edition = "2024"
+authors = ["Andrii Kovalov <andreyykovalev@gmail.com>"]
+description = "Procedural macros for Rustling repositories (PostgreSQL and MongoDB)"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/andreyykovalev/rustling-data"
+homepage = "https://github.com/andreyykovalev/rustling-data"
+documentation = "https://docs.rs/rustling-derive"
+keywords = ["rust", "macro", "derive", "repository", "database"]
+categories = ["database", "development-tools"]
+readme = "../README.md"
 
 [lib]
 proc-macro = true

@@ -2,6 +2,15 @@
 name = "example"
 version = "0.1.0"
 edition = "2024"
+authors = ["Andrii Kovalov <andreyykovalev@gmail.com>"]
+description = "Example project demonstrating usage of Rustling with PostgreSQL and MongoDB"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/andreyykovalev/rustling-data"
+homepage = "https://github.com/andreyykovalev/rustling-data"
+documentation = "https://docs.rs/rustling"
+keywords = ["rust", "database", "example", "postgres", "mongodb"]
+categories = ["database", "examples"]
+readme = "../README.md"
 
 [dependencies]
 rustling-derive = { path = "../rustling-derive", features = ["full"] }

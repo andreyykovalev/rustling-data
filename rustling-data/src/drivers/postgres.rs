@@ -53,7 +53,7 @@ impl PostgresDriver {
             })
             .and_then(|row| {
                 row.try_get::<i32, _>("id")
-                    .map_err(|e| RepositoryError::Unknown(e.to_string()))
+                    .map_err(|e| RepositoryError::Other(e.to_string()))
             })
     }
 

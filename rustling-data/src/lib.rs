@@ -1,3 +1,24 @@
+//! # rustling-data 🦀
+//!
+//! Core runtime layer for the **Rustling ORM** system.
+//! Provides traits, error types, and database drivers used by the derive macros in
+//! [`rustling-derive`](https://crates.io/crates/rustling-derive).
+//!
+//! ## Features
+//!
+//! - `mongo`: MongoDB driver
+//! - `postgres`: PostgreSQL driver
+//!
+//! ## Example
+//! ```rust,no_run
+//! use rustling_data::api::CrudRepository;
+//! use rustling_derive::MongoRepository;
+//! ```
+//!
+//! See the crate README for complete examples.
+
+#![doc(html_logo_url = "https://www.rust-lang.org/logos/rust-logo-512x512.png")]
+
 pub mod api;
 pub mod drivers;
 

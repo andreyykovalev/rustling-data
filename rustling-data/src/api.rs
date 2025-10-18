@@ -13,7 +13,7 @@ pub enum RepositoryError<DB> {
     #[error("constraint violation: {0}")]
     ConstraintViolation(String),
     #[error("unknown error: {0}")]
-    Unknown(String),
+    Other(String),
 }
 
 #[async_trait::async_trait]

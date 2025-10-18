@@ -1,8 +1,41 @@
+//! # rustling-derive ⚙️
+//!
+//! Procedural macros for automatic repository generation in the **Rustling ORM** ecosystem.
+//!
+//! This crate provides convenient `#[derive(...)]` macros that automatically
+//! implement repository and entity patterns for MongoDB and PostgreSQL.
+//!
+//! ## ✨ Available Macros
+//!
+//! - `#[derive(Repository)]` — derive a PostgreSQL repository implementation
+//! - `#[derive(MongoRepository)]` — derive a MongoDB repository implementation
+//! - `#[derive(Entity)]` — derive helper methods for SQL entities (columns & values)
+//!
+//! ## 💡 Example
+//! ```rust,no_run
+//! use rustling_derive::{Entity, Repository};
+//!
+//! #[derive(Entity)]
+//! struct User {
+//!     id: i32,
+//!     name: String,
+//!     email: String,
+//! }
+//!
+//! #[derive(Repository)]
+//! #[entity(User)]
+//! #[id(i32)]
+//! #[table("users")]
+//! struct UserRepository;
+//! ```
+//!
+//! See the [crate README](https://crates.io/crates/rustling-derive) for setup instructions.
+
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput, Fields};
+use syn::{Data, DeriveInput, Fields, parse_macro_input};
 
 mod common;
 
@@ -40,7 +73,10 @@ pub fn derive_entity(input: TokenStream) -> TokenStream {
         _ => panic!("Entity derive only supports structs"),
     };
 
-    let column_names: Vec<_> = fields.iter().map(|f| f.ident.as_ref().unwrap().to_string()).collect();
+    let column_names: Vec<_> = fields
+        .iter()
+        .map(|f| f.ident.as_ref().unwrap().to_string())
+        .collect();
     let field_idents: Vec<_> = fields.iter().map(|f| f.ident.as_ref().unwrap()).collect();
 
     let gene = quote! {

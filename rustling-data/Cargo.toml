@@ -2,6 +2,15 @@
 name = "rustling-data"
 version = "0.1.0"
 edition = "2024"
+authors = ["Andrii Kovalov <andreyykovalev@gmail.com>"]
+description = "Core data access layer for Rustling, supporting PostgreSQL and MongoDB"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/andreyykovalev/rustling-data"
+homepage = "https://github.com/andreyykovalev/rustling-data"
+documentation = "https://docs.rs/rustling-data"
+keywords = ["rust", "database", "repository", "postgres", "mongodb"]
+categories = ["database", "asynchronous"]
+readme = "../README.md"
 
 [dependencies]
 async-trait = "0.1"
