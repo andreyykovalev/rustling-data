@@ -44,7 +44,7 @@ impl MongoDriver {
         result
             .inserted_id
             .as_object_id()
-            .ok_or_else(|| RepositoryError::Unknown("Failed to get inserted ID".into()))
+            .ok_or_else(|| RepositoryError::Other("Failed to get inserted ID".into()))
     }
 
     pub async fn find_all<T>(&self, collection: &str) -> Result<Vec<T>, RepositoryError<mongodb::error::Error>>
@@ -74,7 +74,7 @@ impl MongoDriver {
     {
         let coll = self.db().collection::<T>(collection);
 
-        let mut update_doc = to_document(doc).map_err(|e| RepositoryError::Unknown(e.to_string()))?;
+        let mut update_doc = to_document(doc).map_err(|e| RepositoryError::Other(e.to_string()))?;
         update_doc.remove("_id"); // important
         let update_doc = doc! { "$set": update_doc };
 
