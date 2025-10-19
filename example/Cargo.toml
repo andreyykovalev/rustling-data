@@ -9,7 +9,7 @@ repository = "https://github.com/andreyykovalev/rustling-data"
 homepage = "https://github.com/andreyykovalev/rustling-data"
 documentation = "https://docs.rs/rustling"
 keywords = ["rust", "database", "example", "postgres", "mongodb"]
-categories = ["database", "examples"]
+categories = ["database"]
 readme = "../README.md"
 
 [dependencies]
