@@ -25,3 +25,4 @@ full = ["postgres", "mongo"]
 syn = { version = "2.0", features = ["full"] }
 quote = "1.0"
 proc-macro2 = "1.0"
+rustling-data = { version = "0.1.0" }
